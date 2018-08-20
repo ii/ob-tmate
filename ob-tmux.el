@@ -92,8 +92,8 @@ Argument PARAMS the org parameters of the code block."
       (unless session-alive (ob-tmux--create-session ob-session))
       (unless window-alive (ob-tmux--create-window ob-session))
       ;; Start terminal window if the session does not yet exist
-      (unless session-alive
-	(ob-tmux--start-terminal-window ob-session terminal))
+      ;; (unless session-alive
+	;; (ob-tmux--start-terminal-window ob-session terminal))
       ;; Wait until tmux window is available
       (while (not (ob-tmux--window-alive-p ob-session)))
       ;; Disable window renaming from within tmux
@@ -207,21 +207,42 @@ Argument OB-SESSION: the current ob-tmux session."
 
 Argument OB-SESSION: the current ob-tmux session."
   (unless (ob-tmux--session-alive-p ob-session)
+    (setenv "TMUX")
+    ;; This hack gets us a tmate_ssh string
+    ;; tmate -S /tmp/tmate.sock new-session -d ; tmate -S /tmp/tmate.sock wait tmate-ready ; tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
+    (message "OB-TMATE: Creating new / connect to existing tmate session")
     (ob-tmux--execute ob-session
-     ;; TODO: set socket
-     "new-session"
-     "-d" ;; just create the session, don't attach.
-     "-c" (expand-file-name "~") ;; start in home directory
-     "-s" (ob-tmux--session ob-session)
-     "-n" (ob-tmux--window-default ob-session))))
+                      ;; TODO: set socket
+                      ;; "-S" "/tmp/ob-tmate-socket" ;; Static for now
+                      "new-session"
+                      "-A" ;; attach if it already exists
+                      "-d" ;; just create the session, don't attach.
+                      ;; "-u" ;; UTF-8 please... only in newer tmux
+                      ;; "-vv" ;; Logs please... also only in newer tmux
+                      "-c" (expand-file-name "~") ;; start in home directory
+                      "-s" (ob-tmux--session ob-session)
+                      "-n" (ob-tmux--window-default ob-session)
+     )
+    ;; (message "OB-TMATE: Waiting for tmate to be ready")
+    ;; (ob-tmux--execute-string ob-session
+    ;; "wait" "tmate-ready"
+    ;; )
+    ;; how can we capture this?
+    ;; (setq ob-tmux-ssh-string (ob-tmux--execute-string ob-session
+    ;;                   "display" "-p" "#{tmate_ssh}"
+    ;;                   ))
+    ;; (message (concat "OB-TMATE: " ob-tmux-ssh-string))
+    )
+  )
 
 (defun ob-tmux--create-window (ob-session)
   "Create a tmux window in session if it does not yet exist.
 
 Argument OB-SESSION: the current ob-tmux session."
   (unless (ob-tmux--window-alive-p ob-session)
+    (message "tmux execute session")
     (ob-tmux--execute ob-session
-     ;; TODO: set socket
+     "-S" (ob-tmux--socket ob-session)
      "new-window"
      "-c" (expand-file-name "~") ;; start in home directory
      "-n" (ob-tmux--window-default ob-session)
@@ -233,7 +254,8 @@ Argument OB-SESSION: the current ob-tmux session."
 Argument OB-SESSION: the current ob-tmux session."
   (when (ob-tmux--window-alive-p ob-session)
     (ob-tmux--execute ob-session
-     ;; TODO set socket
+    "-S" (ob-tmux--socket ob-session)
+    "new-window"
      "set-window-option"
      "-t" (ob-tmux--target ob-session)
      option value)))
@@ -255,7 +277,7 @@ Argument OB-SESSION: the current ob-tmux session."
 Argument OB-SESSION: the current ob-tmux session."
   (when (ob-tmux--window-alive-p ob-session)
     (ob-tmux--execute ob-session
-     ;; TODO set socket
+     "-S" (ob-tmux--socket ob-session)
      "send-keys"
      "-l"
      "-t" (ob-tmux--target ob-session)
