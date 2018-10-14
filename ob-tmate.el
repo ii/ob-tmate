@@ -89,11 +89,13 @@ Argument PARAMS the org parameters of the code block."
            (session-alive (ob-tmate--session-alive-p ob-session))
 	   (window-alive (ob-tmate--window-alive-p ob-session)))
       ;; Create tmate session and window if they do not yet exist
+      (unless session-alive (message "OB-TMATE: create-session"))
       (unless session-alive (ob-tmate--create-session ob-session))
+      (unless window-alive (message "OB-TMATE: create-window"))
       (unless window-alive (ob-tmate--create-window ob-session))
       ;; Start terminal window if the session does not yet exist
       ;; (unless session-alive
-	;; (ob-tmate--start-terminal-window ob-session terminal))
+	    ;; (ob-tmate--start-terminal-window ob-session terminal))
       ;; Wait until tmate window is available
       (while (not (ob-tmate--window-alive-p ob-session)))
       ;; Disable window renaming from within tmate
@@ -161,12 +163,23 @@ Argument OB-SESSION: the current ob-tmate session."
 Argument OB-SESSION: the current ob-tmate session.
 Optional command-line arguments can be passed in ARGS."
   (if (ob-tmate--socket ob-session)
-      (apply 'start-process "ob-tmate" "*Messages*"
+      (progn
+        (message (concat "OB-TMATE: execute on provided socket: => " (ob-tmate--socket ob-session)))
+        (message (concat "OB-TMATE: execute args: => " (s-join " " args)))
+        (message (concat "OB-TMATE: applying 'start-process"))
+        (setenv "TMATE")
+       (apply 'start-process "ob-tmate" "*Messages*"
 	     org-babel-tmate-location
 	     "-S" (ob-tmate--socket ob-session)
 	     args)
+       )
+    (progn
+      (message (concat "OB-TMATE: execute args: => " (s-join " " args)))
+      ;; (message (concat "OB-TMATE: execute ob-session: => " ob-session))
+     (message (concat "OB-TMATE: execute start-process:" (ob-tmate--socket ob-session)))
     (apply 'start-process
 	   "ob-tmate" "*Messages*" org-babel-tmate-location args)))
+  )
 
 (defun ob-tmate--execute-string (ob-session &rest args)
   "Execute a tmate command with arguments as given.
@@ -185,6 +198,7 @@ automatically space separated."
   "Start a TERMINAL window with tmate attached to session.
 
 Argument OB-SESSION: the current ob-tmate session."
+  (message "OB-TMATE: start-terminal-window")
   (let* ((process-name (concat "org-babel: terminal")))
     (unless (ob-tmate--socket ob-session)
       (if (string-equal terminal "xterm")
@@ -207,26 +221,31 @@ Argument OB-SESSION: the current ob-tmate session."
 
 Argument OB-SESSION: the current ob-tmate session."
   (unless (ob-tmate--session-alive-p ob-session)
+    ;; This ensures the TMATE variable is unset
     (setenv "TMATE")
     ;; This hack gets us a tmate_ssh string
     ;; tmate -S /tmp/tmate.sock new-session -d ; tmate -S /tmp/tmate.sock wait tmate-ready ; tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
     (message "OB-TMATE: Creating new / connect to existing tmate session")
+    ;; (message (concat "OB-TMATE: ob-session" ob-session))
+    (message (concat "OB-TMATE: ob-tmate--session ob-session => " (ob-tmate--session ob-session)))
+    (message (concat "OB-TMATE: ob-tmate--window-default => " (ob-tmate--window-default ob-session)))
+    (ob-tmate--window-default ob-session)
     (ob-tmate--execute ob-session
-                      ;; TODO: set socket
-                      ;; "-S" "/tmp/ob-tmate-socket" ;; Static for now
-                      "new-session"
-                      "-A" ;; attach if it already exists
-                      "-d" ;; just create the session, don't attach.
-                      ;; "-u" ;; UTF-8 please... only in newer tmate
-                      ;; "-vv" ;; Logs please... also only in newer tmate
-                      "-c" (expand-file-name "~") ;; start in home directory
-                      "-s" (ob-tmate--session ob-session)
-                      "-n" (ob-tmate--window-default ob-session)
-     )
-    ;; (message "OB-TMATE: Waiting for tmate to be ready")
-    ;; (ob-tmate--execute-string ob-session
-    ;; "wait" "tmate-ready"
-    ;; )
+                       "-S" (ob-tmate--socket ob-session)
+                       ;; "-S" "/tmp/ob-tmate-socket" ;; Static for now
+                       "new-session"
+                       "-A" ;; attach if it already exists
+                       "-d" ;; just create the session, don't attach.
+                       ;; "-u" ;; UTF-8 please... only in newer tmate
+                       ;; "-vv" ;; Logs please... also only in newer tmate
+                       "-c" (expand-file-name "~") ;; start in home directory
+                       ;; "-s" (ob-tmate--session ob-session)
+                       "-n" (ob-tmate--window-default ob-session)
+                       )
+    (message "OB-TMATE: Waiting for tmate to be ready")
+    (ob-tmate--execute ob-session
+    "wait" "tmate-ready"
+    )
     ;; how can we capture this?
     ;; (setq ob-tmate-ssh-string (ob-tmate--execute-string ob-session
     ;;                   "display" "-p" "#{tmate_ssh}"
@@ -242,11 +261,10 @@ Argument OB-SESSION: the current ob-tmate session."
   (unless (ob-tmate--window-alive-p ob-session)
     (message "tmate execute session")
     (ob-tmate--execute ob-session
-     "-S" (ob-tmate--socket ob-session)
+     ;; "-S" (ob-tmate--socket ob-session)
      "new-window"
      "-c" (expand-file-name "~") ;; start in home directory
-     "-n" (ob-tmate--window-default ob-session)
-     "-t" (ob-tmate--session ob-session))))
+     "-n" (ob-tmate--window-default ob-session))))
 
 (defun ob-tmate--set-window-option (ob-session option value)
   "If window exists, set OPTION for window.
@@ -299,11 +317,20 @@ Argument OB-SESSION: the current ob-tmate session."
   "Check if SESSION exists by parsing output of \"tmate ls\".
 
 Argument OB-SESSION: the current ob-tmate session."
-  (let* ((tmate-ls (ob-tmate--execute-string ob-session "ls -F '#S'"))
-	 (tmate-session (ob-tmate--session ob-session)))
-    (car
-     (seq-filter (lambda (x) (string-equal tmate-session x))
-		 (split-string tmate-ls "\n")))))
+  (message "OB-TMATE: session-alive-p")
+  ;; session check is a bit simpler with tmate
+  ;; There is only one session per sockes
+  ;; if we can 'ls' and return non-zero, we are good
+  (apply 'start-process "ob-tmate-check" "*Messages*"
+	       org-babel-tmate-location
+	       "-S" (ob-tmate--socket ob-session)
+	       "ls")
+  )
+  ;; (let* ((tmate-ls (ob-tmate--execute-string ob-session "ls -F '#S'"))
+	;;  (tmate-session (ob-tmate--session ob-session)))
+  ;;   (car
+  ;;    (seq-filter (lambda (x) (string-equal tmate-session x))
+	;; 	 (split-string tmate-ls "\n")))))
 
 (defun ob-tmate--window-alive-p (ob-session)
   "Check if WINDOW exists in tmate session.
