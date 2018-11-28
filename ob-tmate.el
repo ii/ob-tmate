@@ -197,7 +197,7 @@ automatically space separated."
     (message "OB_TMATE: execute-string %S" args)
   (shell-command-to-string
    (concat org-babel-tmate-location " "
-	   (s-join " " args)))))
+	   (string-join args " ")))))
 
 (defun ob-tmate--start-terminal-window (ob-session terminal)
   "Start a TERMINAL window with tmate attached to session.
