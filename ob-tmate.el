@@ -191,21 +191,21 @@ Optional command-line arguments can be passed in ARGS."
   (if (ob-tmate--socket ob-session)
       (progn
         (message (concat "OB-TMATE: execute on provided socket: => " (ob-tmate--socket ob-session)))
-        (message (concat "OB-TMATE: execute args: => " (s-join " " args)))
+        (message (concat "OB-TMATE: execute args: => " (string-join args " ")))
         (message (concat "OB-TMATE: applying 'start-process"))
         (setenv "TMUX")
-       (apply 'start-process "ob-tmate" "*Messages*"
-	     org-babel-tmate-location
-	     "-S" (ob-tmate--socket ob-session)
-	     args)
-       )
+        (apply 'start-process "ob-tmate" "*Messages*"
+	             org-babel-tmate-location
+	             "-S" (ob-tmate--socket ob-session)
+	             args)
+        )
     (progn
-      (message (concat "OB-TMATE: execute args: => " (s-join " " args)))
+      (message (concat "OB-TMATE: execute args: => " (string-join args " ")))
       ;; (message (concat "OB-TMATE: execute ob-session: => " ob-session))
-     (message (concat "OB-TMATE: execute start-process:" (ob-tmate--socket ob-session)))
-     (setenv "TMUX")
-    (apply 'start-process
-	   "ob-tmate" "*Messages*" org-babel-tmate-location args)))
+      (message (concat "OB-TMATE: execute start-process:" (ob-tmate--socket ob-session)))
+      (setenv "TMUX")
+      (apply 'start-process
+	           "ob-tmate" "*Messages*" org-babel-tmate-location args)))
   )
 
 (defun ob-tmate--execute-string (ob-session &rest args)
@@ -342,7 +342,7 @@ Argument OB-SESSION: the current ob-tmate session."
 
 (defun start-process--advice (name buffer program &rest program-args)
   "figure out how the process is being called"
-  (message "%S %S %S %S" name buffer program (s-join " " program-args))
+  (message "%S %S %S %S" name buffer program (string-join program-args " "))
   )
 (advice-add 'start-process :after 'start-process--advice)
 (advice-remove 'start-process 'advice-start--process)
@@ -365,18 +365,18 @@ Argument OB-SESSION: the current ob-tmate session."
   "Check if WINDOW exists in tmate session.
 
 If no window is specified in OB-SESSION, returns 't."
-  (let* ((window (ob-tmate--window ob-session))
-	 (target (ob-tmate--target ob-session))
-	 (output (ob-tmate--execute-string ob-session
-		  "list-panes"
-		  "-F 'yes_exists'"
-		  "-t" (concat "'" window "'")
-      )))
+  (let* (
+         (window (ob-tmate--window-default ob-session))
+	       (target (ob-tmate--target ob-session))
+	       (output (ob-tmate--execute-string ob-session
+		                                       "list-panes"
+		                                       "-F 'yes_exists'"
+		                                       "-t" (concat "'" window "'")
+                                           )))
     (cond (window
-	   (string-equal "yes_exists\n" output))
-	  ((null window)
-	   't))))
-
+	         (string-equal "yes_exists\n" output))
+	        ((null window)
+	         't))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test functions
