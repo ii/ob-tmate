@@ -234,11 +234,11 @@ Argument OB-SESSION: the current ob-tmate session."
 			 terminal
 			 "-T" (ob-tmate--target ob-session)
 			 "-e" org-babel-tmate-location "attach-session"
-			 "-t" (ob-tmate--target ob-session))
+       )
 	(start-process process-name "*Messages*"
 		       terminal "--"
 		       org-babel-tmate-location "attach-session"
-		       "-t" (ob-tmate--target ob-session))))))
+           )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tmate interaction
@@ -302,7 +302,7 @@ Argument OB-SESSION: the current ob-tmate session."
     ;; "-S" (ob-tmate--socket ob-session)
     "new-window"
      "set-window-option"
-     "-t" (ob-tmate--target ob-session)
+     "-t" (ob-tmate--window ob-session)
      option value)))
 
 (defun ob-tmate--disable-renaming (ob-session)
@@ -325,7 +325,7 @@ Argument OB-SESSION: the current ob-tmate session."
      ;; "-S" (ob-tmate--socket ob-session)
      "send-keys"
      "-l"
-     "-t" (ob-tmate--target ob-session)
+     ;; "-t" (ob-tmate--target ob-session)
      line "\n")))
 
 (defun ob-tmate--send-body (ob-session body)
@@ -370,7 +370,8 @@ If no window is specified in OB-SESSION, returns 't."
 	 (output (ob-tmate--execute-string ob-session
 		  "list-panes"
 		  "-F 'yes_exists'"
-		  "-t" (concat "'" target "'"))))
+		  "-t" (concat "'" window "'")
+      )))
     (cond (window
 	   (string-equal "yes_exists\n" output))
 	  ((null window)
