@@ -45,29 +45,6 @@
 ;; (require 's)
 ;; we only use s-join, so I found a simple implementation
 
-;; https://stackoverflow.com/questions/8830888/whats-the-canonical-way-to-join-strings-in-a-list
-;; renamed function to s-join
-(defun %d (stream &rest args)
-  "internal function, writing the dynamic value of the variable
-DELIM to the output STREAM. To be called from inside JOIN."
-  (declare (ignore args)
-           (special delim))
-  (princ delim stream))
-
-(defun s-join (delim list)
-  "creates a string, with the elements of list printed and each
-element separated by DELIM"
-  (declare (special delim))
-  (format nil "~{~a~^~/%d/~:*~}" list))
-
- ;; "~{      iteration start
- ;; ~a      print element
- ;; ~^      exit iteration if no more elements
- ;; ~/%d/   call function %d with one element
- ;; ~:*     move one element backwards
- ;; ~}"     end of iteration command
-
-
 (defcustom org-babel-tmate-location "tmate"
   "The command location for tmate.
 Change in case you want to use a different tmate than the one in your $PATH."
