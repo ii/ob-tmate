@@ -299,11 +299,14 @@ Argument OB-SESSION: the current ob-tmate session."
   "Check if SESSION exists by parsing output of \"tmate ls\".
 
 Argument OB-SESSION: the current ob-tmate session."
-  (let* ((tmate-ls (ob-tmate--execute-string ob-session "ls -F '#S'"))
-	 (tmate-session (ob-tmate--session ob-session)))
-    (car
-     (seq-filter (lambda (x) (string-equal tmate-session x))
-		 (split-string tmate-ls "\n")))))
+  (message (concat "OB-TMATE: session-alive-p socket: " (ob-tmate--socket ob-session)))
+  ;; session check is a bit simpler with tmate
+  ;; There is only one session per socket
+  ;; if we can 'tmate ls' and return zero, we are good
+  (= 0 (apply 'call-process org-babel-tmate-location nil nil nil
+	            "-S" (ob-tmate--socket ob-session)
+	            '("ls"))
+     ))
 
 (defun ob-tmate--window-alive-p (ob-session)
   "Check if WINDOW exists in tmate session.
