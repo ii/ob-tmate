@@ -41,7 +41,7 @@
 
 (require 'ob)
 (require 'seq)
-(require 's)
+;; (require 's)
 
 
 (defcustom org-babel-tmate-location "tmate"
@@ -177,9 +177,10 @@ command-line arguments can be passed in ARGS and are
 automatically space separated."
   (let* ((socket (ob-tmate--socket ob-session))
 	 (args (if socket (cons "-S" (cons socket args)) args)))
+    (message "OB_TMATE: execute-string %S" args)
   (shell-command-to-string
    (concat org-babel-tmate-location " "
-	   (s-join " " args)))))
+	   (string-join args " ")))))
 
 (defun ob-tmate--start-terminal-window (ob-session terminal)
   "Start a TERMINAL window with tmate attached to session.
