@@ -228,6 +228,7 @@ Argument OB-SESSION: the current ob-tmate session."
 
 Argument OB-SESSION: the current ob-tmate session."
   (unless (ob-tmate--window-alive-p ob-session)
+    (message (concat "OB-TMATE: create-window: " (ob-tmate--window-default ob-session)))
     (ob-tmate--execute ob-session
      "new-window"
      "-c" (expand-file-name "~") ;; start in home directory
