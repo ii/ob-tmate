@@ -194,16 +194,18 @@ automatically space separated."
 Argument OB-SESSION: the current ob-tmate session."
   (let* ((process-name (concat "org-babel: terminal")))
     (unless (ob-tmate--socket ob-session)
-      (if (string-equal terminal "xterm")
-	  (start-process process-name "*Messages*"
-			 terminal
-			 "-T" (ob-tmate--target ob-session)
-			 "-e" org-babel-tmate-location "attach-session"
-			 )
-	(start-process process-name "*Messages*"
-		       terminal "--"
-		       org-babel-tmate-location "attach-session"
-		       )))))
+      (if (string-equal terminal "gnome-terminal")
+	      (start-process process-name "*Messages*"
+		                     terminal "--"
+		                     org-babel-tmate-location "attach-session"
+		                     )
+        (start-process process-name "*Messages*"
+			                 terminal
+			                 "-T" (ob-tmate--target ob-session)
+			                 "-e" org-babel-tmate-location "attach-session"
+			                 )
+        )
+	)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tmate interaction
