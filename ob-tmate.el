@@ -63,6 +63,7 @@ Change in case you want to use a different tmate than the one in your $PATH."
 (defvar org-babel-default-header-args:tmate
   '((:results . "silent")
     (:session . "default")
+    (:window . "main")
     (:socket . nil)
     (:terminal . "sakura"))
   "Default arguments to use when running tmate source blocks.")
@@ -83,13 +84,15 @@ Argument PARAMS the org parameters of the code block."
   (save-window-excursion
     (let* ((org-session (cdr (assq :session params)))
 	   (terminal (cdr (assq :terminal params)))
+	   (window (cdr (assq :window params)))
 	   (socket (cdr (assq :socket params)))
 	   (socket (when socket (expand-file-name socket)))
 	   (ob-session (ob-tmate--from-org-session org-session socket))
-           (session-alive (ob-tmate--session-alive-p ob-session))
+     (session-alive (ob-tmate--session-alive-p ob-session))
 	   (window-alive (ob-tmate--window-alive-p ob-session)))
       ;; Create tmate session and window if they do not yet exist
       (unless session-alive (ob-tmate--create-session ob-session))
+      ;; (ob-tmate--session-name-set ob-session)
       (unless window-alive (ob-tmate--create-window ob-session))
       ;; Start terminal window if the session does not yet exist
       (unless session-alive
@@ -219,7 +222,7 @@ Argument OB-SESSION: the current ob-tmate session."
     (ob-tmate--execute ob-session
      "new-session"
      "-d" ;; just create the session, don't attach.
-     "-c" (expand-file-name "~") ;; start in home directory
+     ;; "-c" (expand-file-name "~") ;; start in home directory
      "-s" (ob-tmate--session ob-session)
      "-n" (ob-tmate--window-default ob-session))))
 
@@ -309,6 +312,25 @@ Argument OB-SESSION: the current ob-tmate session."
 	            '("ls"))
      ))
 
+(defun ob-tmate--session-name-set (ob-session)
+  "Check if SESSION name is set correctly by checking \"tmate has-session\".
+
+Argument OB-SESSION: the current ob-tmate session."
+  (message (concat "OB-TMATE: session-name-set session: " (ob-tmate--session ob-session)))
+  ;; session check is a bit simpler with tmate
+  ;; There is only one session per socket
+  ;; if we can 'tmate ls' and return zero, we are good
+  (if (not (= 0 (apply 'call-process org-babel-tmate-location nil nil nil
+	            "-S" (ob-tmate--socket ob-session)
+	            (concat "has-session" (ob-tmate--session ob-session))
+              )
+          ))
+      (apply 'call-process org-babel-tmate-location nil nil nil
+	            "-S" (ob-tmate--socket ob-session)
+	            '("rename-session")
+              (ob-tmate-session ob-session))
+    )
+)
 (defun ob-tmate--window-alive-p (ob-session)
   "Check if WINDOW exists in tmate session.
 
