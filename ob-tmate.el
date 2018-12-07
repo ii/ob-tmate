@@ -161,12 +161,17 @@ Argument OB-SESSION: the current ob-tmate session."
 Argument OB-SESSION: the current ob-tmate session.
 Optional command-line arguments can be passed in ARGS."
   (if (ob-tmate--socket ob-session)
+      (progn
+        (setenv "TMUX")
       (apply 'start-process "ob-tmate" "*Messages*"
 	     org-babel-tmate-location
 	     "-S" (ob-tmate--socket ob-session)
-	     args)
-    (apply 'start-process
-	   "ob-tmate" "*Messages*" org-babel-tmate-location args)))
+	     args))
+    (progn
+      (setenv "TMUX")
+      (apply 'start-process
+	           "ob-tmate" "*Messages*" org-babel-tmate-location args)
+      )))
 
 (defun ob-tmate--execute-string (ob-session &rest args)
   "Execute a tmate command with arguments as given.
