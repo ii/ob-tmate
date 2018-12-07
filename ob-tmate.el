@@ -362,6 +362,13 @@ Argument PATH: the location of the file."
 
 (provide 'ob-tmate)
 
+;; Advising (and unadvising) start-process 
+(defun start-process--advice (name buffer program &rest program-args)
+  "figure out how the process is being called"
+  (message "%S %S %S %S" name buffer program (string-join program-args " "))
+  )
+(advice-add 'start-process :after 'start-process--advice)
+;;(advice-remove 'start-process 'advice-start--process)
 
 
 ;;; ob-tmate.el ends here
