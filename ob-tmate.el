@@ -145,10 +145,11 @@ Argument OB-SESSION: the current ob-tmate session."
 If no window is specified, use first window.
 
 Argument OB-SESSION: the current ob-tmate session."
-  (let* ((target-session (ob-tmate--session ob-session))
-	 (window (ob-tmate--window ob-session))
-	 (target-window (if window (concat "=" window) "^")))
-    (concat target-session ":" target-window)))
+  (let* (
+         (target-session (ob-tmate--session ob-session))
+	       (window (ob-tmate--window ob-session))
+	       (target-window (if window (concat "=" window) "^")))
+    (concat "$0:" target-window)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
