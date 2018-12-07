@@ -312,16 +312,20 @@ Argument OB-SESSION: the current ob-tmate session."
   "Check if WINDOW exists in tmate session.
 
 If no window is specified in OB-SESSION, returns 't."
-  (let* ((window (ob-tmate--window ob-session))
-	 (target (ob-tmate--target ob-session))
-	 (output (ob-tmate--execute-string ob-session
-		  "list-panes"
-		  "-F 'yes_exists'"
-		  "-t" (concat "'" target "'"))))
-    (cond (window
-	   (string-equal "yes_exists\n" output))
-	  ((null window)
-	   't))))
+  (let* (
+         (window (ob-tmate--window-default ob-session))
+	       (target (ob-tmate--target ob-session))
+	       (output (ob-tmate--execute-string ob-session
+		                                       "list-panes"
+		                                       "-F 'yes_exists'"
+		                                       "-t" (concat "'$0:" window "'")
+                                           )))
+    (progn
+      (message (concat "OB-TMATE: window-alive-p :" target))
+      (cond (window
+	           (string-equal "yes_exists\n" output))
+	          ((null window)
+	           't)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
