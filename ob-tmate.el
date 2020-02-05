@@ -64,12 +64,12 @@ Change in case you want to use a different tmate than the one in your $PATH."
 (defvar org-babel-default-header-args:tmate
   '((:results . "silent")
     (:session . "default")
+    (:dir . ".")
     (:socket . nil)
     (:terminal . "gnome-terminal"))
   "Default arguments to use when running tmate source blocks.")
 
 (add-to-list 'org-src-lang-modes '("tmate" . sh))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; org-babel interface
@@ -85,6 +85,7 @@ Argument PARAMS the org parameters of the code block."
     (let* ((org-session (cdr (assq :session params)))
 	   (terminal (cdr (assq :terminal params)))
 	   (socket (cdr (assq :socket params)))
+	   (session-dir (cdr (assq :dir params)))
 	   (socket (when socket (expand-file-name socket)))
 	   (ob-session (ob-tmate--from-org-session org-session socket))
      (session-alive (ob-tmate--session-alive-p ob-session))
@@ -92,10 +93,10 @@ Argument PARAMS the org parameters of the code block."
       ;; Create tmate session and window if they do not yet exist
       (message "OB-TMATE: Checking for session: %S" session-alive)
       (unless session-alive (message "OB-TMATE: create-session"))
-      (unless session-alive (ob-tmate--create-session ob-session))
+      (unless session-alive (ob-tmate--create-session ob-session dir))
       (message "OB-TMATE: Checking for window: %S" window-alive)
       (unless window-alive (message "OB-TMATE: create-window"))
-      (unless window-alive (ob-tmate--create-window ob-session))
+      (unless window-alive (ob-tmate--create-window ob-session session-dir))
       ;; Start terminal window if the session does not yet exist
       ;; (unless session-alive
 	    ;; (ob-tmate--start-terminal-window ob-session terminal))
@@ -126,9 +127,9 @@ Argument PARAMS the org parameters of the code block."
   (let* ((window (cadr (split-string org-session ":"))))
     (if (string-equal "" window) nil window)))
 
-(defun ob-tmate--from-org-session (org-session &optional socket)
+(defun ob-tmate--from-org-session (org-session socket)
   "Create a new ob-tmate-session object from ORG-SESSION specification.
-Optional argument SOCKET: the location of the tmate socket (only use if non-standard)."
+Required argument SOCKET: the location of the tmate socket."
 
   (ob-tmate--create
    :session (ob-tmate--tmate-session org-session)
@@ -221,7 +222,7 @@ Argument OB-SESSION: the current ob-tmate session."
 ;; Tmate interaction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun ob-tmate--create-session (ob-session)
+(defun ob-tmate--create-session (ob-session session-dir)
   "Create a tmate session if it does not yet exist.
 
 Argument OB-SESSION: the current ob-tmate session."
@@ -242,7 +243,7 @@ Argument OB-SESSION: the current ob-tmate session."
                        ;; "-S" "/tmp/ob-tmate-socket" ;; Static for now
                        ;; "-u" ;; UTF-8 please... only in newer tmux
                        ;; "-vv" ;; Logs please... also only in newer tmux
-                       ;; "-c" (expand-file-name "~") ;; start in home directory
+                       "-c" (expand-file-name session-dir)
                        "-s" (ob-tmate--session ob-session)
                        "-n" (ob-tmate--window-default ob-session)
                        )
@@ -258,7 +259,7 @@ Argument OB-SESSION: the current ob-tmate session."
     )
   )
 
-(defun ob-tmate--create-window (ob-session)
+(defun ob-tmate--create-window (ob-session session-dir)
   "Create a tmate window in session if it does not yet exist.
 
 Argument OB-SESSION: the current ob-tmate session."
@@ -267,7 +268,8 @@ Argument OB-SESSION: the current ob-tmate session."
     (ob-tmate--execute ob-session
      ;; "-S" (ob-tmate--socket ob-session)
      "new-window"
-     "-c" (expand-file-name "~") ;; start in home directory
+     "-c" (expand-file-name session-dir)
+     ;; "-c" (expand-file-name "~") ;; start in home directory
      "-n" (ob-tmate--window-default ob-session))))
 
 (defun ob-tmate--set-window-option (ob-session option value)
