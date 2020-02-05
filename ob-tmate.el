@@ -300,20 +300,29 @@ Argument OB-SESSION: the current ob-tmate session."
 
 Argument OB-SESSION: the current ob-tmate session."
   (when (ob-tmate--window-alive-p ob-session)
-    (ob-tmate--execute ob-session
-     ;; "-S" (ob-tmate--socket ob-session)
-     "send-keys"
-     "-l"
-     ;; "-t" (ob-tmate--target ob-session)
-     line "\n")))
+    (progn
+      (ob-tmate--execute ob-session
+                         "select-window"
+                         "-t" (ob-tmate--window ob-session))
+      (ob-tmate--execute ob-session
+                         ;; "-S" (ob-tmate--socket ob-session)
+                         "send-keys"
+                         "-l"
+                         "-t" (ob-tmate--window ob-session)
+                         line "\n")
+      )))
 
 (defun ob-tmate--send-body (ob-session body)
   "If tmate window (passed in OB-SESSION) exists, send BODY to it.
 
 Argument OB-SESSION: the current ob-tmate session."
   (let ((lines (split-string body "[\n\r]+")))
+    ;; select-window before send-keys
+    ;; send-keys doesn't support sending to a window
+    ()
     (when (ob-tmate--window-alive-p ob-session)
-      (mapc (lambda (l) (ob-tmate--send-keys ob-session l)) lines))))
+      (mapc (lambda (l) (ob-tmate--send-keys ob-session l)) lines))
+    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tmate interrogation
@@ -348,14 +357,10 @@ If no window is specified in OB-SESSION, returns 't."
          (window (ob-tmate--window-default ob-session))
 	       (target (ob-tmate--target ob-session))
 	       (output (ob-tmate--execute-string ob-session
-		                                       "list-panes"
-		                                       "-F 'yes_exists'"
-		                                       "-t" (concat "'" window "'")
+		                                       "list-windows"
+		                                       "-F '#W'"
                                            )))
-    (cond (window
-	         (string-equal "yes_exists\n" output))
-	        ((null window)
-	         't))))
+    (string-match-p (concat window "\n") output)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test functions
