@@ -93,7 +93,7 @@ Argument PARAMS the org parameters of the code block."
       ;; Create tmate session and window if they do not yet exist
       (message "OB-TMATE: Checking for session: %S" session-alive)
       (unless session-alive (message "OB-TMATE: create-session"))
-      (unless session-alive (ob-tmate--create-session ob-session dir))
+      (unless session-alive (ob-tmate--create-session ob-session session-dir))
       (message "OB-TMATE: Checking for window: %S" window-alive)
       (unless window-alive (message "OB-TMATE: create-window"))
       (unless window-alive (ob-tmate--create-window ob-session session-dir))
